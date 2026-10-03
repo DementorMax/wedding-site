@@ -587,15 +587,12 @@
             }, 300);
         }
 
-        // ===== ОТПРАВКА ЧЕРЕЗ FORMDATA (ОБХОД CORS) =====
+        // ===== ОТПРАВКА ЧЕРЕЗ FORMDATA (САМЫЙ НАДЁЖНЫЙ СПОСОБ) =====
         function sendDataFast(payload) {
             const formData = new FormData();
-            formData.append('data', JSON.stringify(payload));
-
-            if (navigator.sendBeacon) {
-                const ok = navigator.sendBeacon(GOOGLE_SCRIPT_URL, formData);
-                if (ok) return;
-            }
+            formData.append('guestName', payload.guestName || '');
+            formData.append('attendance', payload.attendance || '');
+            formData.append('company', payload.company || '');
 
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
@@ -679,7 +676,6 @@
             }
 
             sendDataFast({
-                timestamp: new Date().toLocaleString('ru-RU'),
                 guestName: name,
                 attendance: attendanceText,
                 company: companyText
