@@ -138,6 +138,28 @@
         }
         .input-light::placeholder {
             color: #628049;
+            opacity: 0.5;
+        }
+
+        /* Подсказка под полем */
+        .input-hint {
+            display: block;
+            text-align: center;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            color: #628049;
+            opacity: 0.65;
+            margin-top: 0.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* Подсветка ошибки */
+        .input-light.input-error {
+            border-bottom-color: #c0392b;
+            color: #c0392b;
+        }
+        .input-light.input-error::placeholder {
+            color: #c0392b;
         }
 
         input[type="radio"] {
@@ -338,10 +360,11 @@
             </div>
 
             <div id="rsvp-form-container">
-                <form id="rsvp-form" class="space-y-10 max-w-md mx-auto">
+                <form id="rsvp-form" class="space-y-10 max-w-md mx-auto" novalidate>
                     <div class="text-fade" data-delay="3">
-                        <label for="name" class="block text-base uppercase tracking-[0.15em] mb-2 text-center text-softGreen">Имя и фамилия</label>
-                        <input type="text" id="name" required placeholder="Введите ваше имя" class="input-light">
+                        <label for="guest-name" class="block text-base uppercase tracking-[0.15em] mb-2 text-center text-softGreen">Имя и фамилия</label>
+                        <input type="text" id="guest-name" required placeholder="Введите ваше имя" class="input-light" autocomplete="name">
+                        <span class="input-hint">Например: Иванов Иван</span>
                     </div>
 
                     <div class="text-fade text-center" data-delay="4">
@@ -373,7 +396,8 @@
 
                     <div id="plus-one-name-container" class="hidden opacity-0 transition-opacity duration-500 ease-in-out text-fade">
                         <label for="plus-one-name" class="block text-base text-center mb-2 uppercase tracking-[0.15em] text-softGreen">Имя вашего спутника/спутницы</label>
-                        <input type="text" id="plus-one-name" placeholder="Имя +1" class="input-light text-center">
+                        <input type="text" id="plus-one-name" placeholder="Имя +1" class="input-light text-center" autocomplete="off">
+                        <span class="input-hint">Например: Петрова Анна</span>
                     </div>
 
                     <div class="text-fade text-center font-serif italic text-softGreen text-lg lg:text-xl leading-relaxed px-2 mt-8" data-delay="6">
@@ -400,7 +424,7 @@
                 <div class="text-fade relative w-full max-w-md bg-transparent rounded-2xl shadow-lg border border-softGreen px-6 py-8 text-center" data-delay="1">
                     <h2 class="font-serif text-2xl md:text-3xl tracking-[0.15em] uppercase mb-6 text-mainBg">О подарках</h2>
                     <p class="font-sans text-softGreen text-base md:text-lg uppercase tracking-wide leading-relaxed mb-4">
-                        Главный подарок для нас,<br>ваше присутствие!
+                        Главный подарок для нас —<br>ваше присутствие!
                     </p>
                     <p class="font-sans text-softGreen text-base md:text-lg leading-relaxed">
                         Но если вы всё же хотите сделать<br>нам приятное, мы будем благодарны<br>за вклад в наше совместное будущее.
@@ -417,6 +441,31 @@
     <script>
         // ===== ВАШ URL ИЗ GOOGLE APPS SCRIPT =====
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzV438G_HQ0_GNf4qJvlTxPOtRDtKODJlPuUmc1Y1847kI5Oap6uucIlz3bW6l7z6IF/exec';
+
+        // ===== ВАЛИДАЦИЯ ИМЁН =====
+        // Только кириллица, латиница, пробел, дефис, апостроф
+        const NAME_ALLOWED_REGEX = /^[А-Яа-яЁёA-Za-z\s\-']+$/;
+        // Для очистки ввода на лету (удаляем всё, что не подходит)
+        const NAME_CLEAN_REGEX = /[^А-Яа-яЁёA-Za-z\s\-']/g;
+
+        function attachNameValidation(inputEl) {
+            inputEl.addEventListener('input', function (e) {
+                const raw = e.target.value;
+                const cleaned = raw.replace(NAME_CLEAN_REGEX, '');
+                if (raw !== cleaned) {
+                    e.target.value = cleaned;
+                }
+            });
+        }
+
+        function isValidName(value) {
+            const trimmed = value.trim();
+            if (trimmed.length < 2) return false;
+            if (!NAME_ALLOWED_REGEX.test(trimmed)) return false;
+            // Хотя бы одна буква
+            if (!/[А-Яа-яЁёA-Za-z]/.test(trimmed)) return false;
+            return true;
+        }
 
         function initPolaroids() {
             const polaroids = document.querySelectorAll('.polaroid');
@@ -483,13 +532,29 @@
         document.getElementById('rsvp-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const name = document.getElementById('name').value.trim();
+            const nameInput = document.getElementById('guest-name');
+            const plusOneNameInput = document.getElementById('plus-one-name');
+
+            const name = nameInput.value.trim();
             const attendance = document.querySelector('input[name="attendance"]:checked');
             const plusOne = document.querySelector('input[name="plus-one"]:checked');
-            const plusOneName = document.getElementById('plus-one-name').value.trim();
+            const plusOneName = plusOneNameInput.value.trim();
+
+            // Сбрасываем подсветку ошибок
+            nameInput.classList.remove('input-error');
+            plusOneNameInput.classList.remove('input-error');
 
             if (!name) {
+                nameInput.classList.add('input-error');
                 alert('Пожалуйста, напишите ваше имя');
+                nameInput.focus();
+                return;
+            }
+
+            if (!isValidName(name)) {
+                nameInput.classList.add('input-error');
+                alert('Имя может содержать только русские или английские буквы, пробел и дефис.\nМинимум 2 символа.\n\nПример: Иванов Иван');
+                nameInput.focus();
                 return;
             }
 
@@ -509,7 +574,15 @@
                 plusOneText = plusOne.value;
                 if (plusOne.value === 'С парой') {
                     if (!plusOneName) {
+                        plusOneNameInput.classList.add('input-error');
                         alert('Пожалуйста, напишите имя вашего спутника/спутницы');
+                        plusOneNameInput.focus();
+                        return;
+                    }
+                    if (!isValidName(plusOneName)) {
+                        plusOneNameInput.classList.add('input-error');
+                        alert('Имя спутника/спутницы может содержать только русские или английские буквы, пробел и дефис.\nМинимум 2 символа.\n\nПример: Петрова Анна');
+                        plusOneNameInput.focus();
                         return;
                     }
                     plusOneText = 'С парой: ' + plusOneName;
@@ -534,6 +607,13 @@
                     })
                 });
 
+                // Сброс формы
+                this.reset();
+                document.querySelectorAll('input[name="plus-one"]').forEach(r => r.checked = false);
+                plusOneNameInput.value = '';
+                nameInput.classList.remove('input-error');
+                plusOneNameInput.classList.remove('input-error');
+
                 const formContainer = document.getElementById('rsvp-form-container');
                 const successMessage = document.getElementById('rsvp-success');
                 formContainer.style.opacity = '0';
@@ -549,7 +629,6 @@
 
             } catch (err) {
                 alert('Ошибка отправки. Попробуйте позже или напишите нам лично.');
-            } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
             }
@@ -558,6 +637,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             initScrollAnimations();
             initPolaroids();
+
+            // Подключаем валидацию к полям имени
+            attachNameValidation(document.getElementById('guest-name'));
+            attachNameValidation(document.getElementById('plus-one-name'));
 
             setTimeout(() => {
                 const firstScreenElements = document.querySelectorAll('section:first-of-type .text-fade');
