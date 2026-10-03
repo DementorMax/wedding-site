@@ -480,7 +480,7 @@
 
     <script>
         // ===== ВАШ URL ИЗ GOOGLE APPS SCRIPT =====
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6KMjvQkNTyINJBZloyTHK0V3JXL3zYpzWU3ZExPd_qYfY_1-FpyKoypHHhn07tAVV/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzB2MDwK9Lpg7cttaMY65wZy5GKqiZtM7iK7GTrG_xHIoMQVZybfQLB6w-pWJUfGPab/exec';
 
         // ===== ВАЛИДАЦИЯ ИМЁН =====
         const NAME_ALLOWED_REGEX = /^[А-Яа-яЁёA-Za-z\s\-']+$/;
@@ -587,27 +587,13 @@
             }, 300);
         }
 
-        // ===== ОТПРАВКА ДАННЫХ (быстрая, без ожидания) =====
+        // ===== ОТПРАВКА ДАННЫХ =====
         function sendDataFast(payload) {
-            const json = JSON.stringify(payload);
-
-            if (navigator.sendBeacon) {
-                const blob = new Blob([json], { type: 'application/json' });
-                const ok = navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
-                if (ok) return;
-            }
-
-            try {
-                fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: json,
-                    keepalive: true
-                });
-            } catch (e) {
-                // Игнорируем
-            }
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(function() { /* игнорируем */ });
         }
 
         document.getElementById('rsvp-form').addEventListener('submit', function(e) {
